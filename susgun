@@ -1,43 +1,18 @@
--- Single unified AutoFarm UI (รวมทุกฟังก์ชันตามที่ขอ)
--- by: generated for user
--- Features: Auto Zoom, Auto Sukuna+Akaza, Auto Mihawk+SJW, Auto Aizen, Auto Observation Haki, Auto Equip Weapon
+-- Unified Safe Study UI (Lua) — สำหรับศึกษาเท่านั้น (ไม่เรียก Remotes / ไม่แก้ workspace)
+-- รวมเป็นสคริปต์เดียว: ปุ่ม: AutoZoom, Auto Sukuna+Akaza, Auto Mihawk+SJW, Auto Aizen, Auto Observation Haki, Auto Equip
 -- Default weapon: "Dual Dagger"
+-- ผู้เขียน: assistant (safe-study version)
 
---===[ Settings / Defaults ]===--
+-- Settings
 local DEFAULT_WEAPON = "Dual Dagger"
 local SKILL_DELAY = 0.3
 
-local QUEST_CFRAME_AIZEN = CFrame.new(-415.932373, 3.96696687, -709.392212, -0.864932775, 0, -0.501887977, 0, 1, 0, 0.501887977, 0, -0.864932775)
-local QUEST_CFRAME_SUKUNA = CFrame.new(537.64801, 8.62301731, -542.656372, -0.766061664, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, -0.766061664)
-local QUEST_CFRAME_MIHawk = CFrame.new(0,0,0) -- placeholder if needed; we will teleport to a chosen quest CFrame when boss absent (use Aizen or Sukuna cframes where appropriate)
-
---===[ Services ]===--
+-- Services (เฉพาะ UI/print ใช้ได้ปลอดภัย)
 local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local workspace = workspace
 local player = Players.LocalPlayer
-local camera = workspace.CurrentCamera
 
-local Remotes = nil
-pcall(function()
-    Remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Serverside")
-end)
-
---===[ Remove old UI (attempt common names) ]===--
-pcall(function()
-    local pg = player:WaitForChild("PlayerGui")
-    local toRemove = {"AizenFarmUI","BossFarmUI","AizenUI","BossUI","GunHubUI","yedmeagunhub","KuytokHub","FarmUI"}
-    for _,g in pairs(pg:GetChildren()) do
-        for _,name in pairs(toRemove) do
-            if g.Name == name or string.find(g.Name, name) then
-                pcall(function() g:Destroy() end)
-            end
-        end
-    end
-end)
-
---===[ Global states (exposed) ]===--
+-- Global flags
 getgenv().AutoZoom = false
 getgenv().AutoSukunaAkaza = false
 getgenv().AutoMihawkSJW = false
@@ -47,58 +22,68 @@ getgenv().AutoEquipWeapon = false
 getgenv().AutoWeaponName = DEFAULT_WEAPON
 getgenv().SkillDelay = SKILL_DELAY
 
---===[ Create UI (single page) ]===--
+-- Remove commonly named old GUIs (best-effort, safe)
+pcall(function()
+    local pg = player:WaitForChild("PlayerGui")
+    for _,g in pairs(pg:GetChildren()) do
+        if string.find(string.lower(g.Name), "farm") or string.find(string.lower(g.Name), "ui") then
+            -- don't auto-destroy everything; just attempt common names
+            if g.Name == "UnifiedBossFarmUI" or g.Name == "AizenFarmUI" or g.Name == "BossFarmUI" then
+                pcall(function() g:Destroy() end)
+            end
+        end
+    end
+end)
+
+-- Create UI
 local gui = Instance.new("ScreenGui")
 gui.Name = "UnifiedBossFarmUI"
 gui.ResetOnSpawn = false
 gui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 320, 0, 260)
-frame.Position = UDim2.new(0.72, 0, 0.45, 0)
-frame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+frame.Size = UDim2.new(0, 340, 0, 300)
+frame.Position = UDim2.new(0.6, 0, 0.35, 0)
+frame.BackgroundColor3 = Color3.fromRGB(28, 28, 30)
 frame.BorderSizePixel = 0
-frame.BackgroundTransparency = 0.05
 frame.Active = true
 frame.Draggable = true
-frame.Name = "MainFrame"
 
 local title = Instance.new("TextLabel", frame)
 title.Size = UDim2.new(1, -20, 0, 36)
 title.Position = UDim2.new(0, 10, 0, 8)
 title.BackgroundTransparency = 1
-title.Text = "Unified AutoFarm"
+title.Text = "Unified AutoFarm (Study Mode)"
 title.TextColor3 = Color3.new(1,1,1)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 title.TextXAlignment = Enum.TextXAlignment.Left
 
-local function makeToggleBtn(text, order)
+local function makeToggleBtn(text, y)
     local btn = Instance.new("TextButton", frame)
     btn.Size = UDim2.new(1, -20, 0, 40)
-    btn.Position = UDim2.new(0, 10, 0, 12 + 36 + (order-1) * 48)
+    btn.Position = UDim2.new(0, 10, 0, y)
     btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    btn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
     btn.TextColor3 = Color3.new(1,1,1)
-    btn.Font = Enum.Font.GothamBold
+    btn.Font = Enum.Font.GothamSemibold
     btn.TextSize = 14
     btn.AutoButtonColor = true
     btn.BorderSizePixel = 0
-    btn.Name = "Btn"..order
     return btn
 end
 
-local zoomBtn = makeToggleBtn("Auto Zoom ❌", 1)
-local sukunaBtn = makeToggleBtn("Auto Sukuna + Akaza ❌", 2)
-local mihawkBtn = makeToggleBtn("Auto Mihawk + SJW ❌", 3)
-local aizenBtn = makeToggleBtn("Auto Aizen ❌", 4)
-local hakiBtn = makeToggleBtn("Auto Observation Haki ❌", 5)
-local equipBtn = makeToggleBtn("Auto Equip Weapon ❌", 6)
+local zoomBtn = makeToggleBtn("Auto Zoom ❌", 56)
+local sukunaBtn = makeToggleBtn("Auto Sukuna + Akaza ❌", 56+48)
+local mihawkBtn = makeToggleBtn("Auto Mihawk + SJW ❌", 56+48*2)
+local aizenBtn = makeToggleBtn("Auto Aizen ❌", 56+48*3)
+local hakiBtn = makeToggleBtn("Auto Observation Haki ❌", 56+48*4)
+local equipBtn = makeToggleBtn("Auto Equip Weapon ❌", 56+48*5)
 
--- weapon input textbox
+-- Weapon UI
 local weaponLabel = Instance.new("TextLabel", frame)
-weaponLabel.Size = UDim2.new(0.5, -15, 0, 28)
-weaponLabel.Position = UDim2.new(0, 10, 0, 12 + 36 + 6*48)
+weaponLabel.Size = UDim2.new(0.3, 0, 0, 28)
+weaponLabel.Position = UDim2.new(0, 10, 0, 56+48*6 + 6)
 weaponLabel.BackgroundTransparency = 1
 weaponLabel.Text = "Weapon:"
 weaponLabel.TextColor3 = Color3.fromRGB(200,200,200)
@@ -107,48 +92,38 @@ weaponLabel.TextSize = 14
 weaponLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local weaponBox = Instance.new("TextBox", frame)
-weaponBox.Size = UDim2.new(0.5, -15, 0, 28)
-weaponBox.Position = UDim2.new(0.5, 5, 0, 12 + 36 + 6*48)
+weaponBox.Size = UDim2.new(0.6, 0, 0, 28)
+weaponBox.Position = UDim2.new(0, 10 + 80, 0, 56+48*6 + 6)
 weaponBox.Text = DEFAULT_WEAPON
-weaponBox.PlaceholderText = "Weapon name"
 weaponBox.ClearTextOnFocus = false
 weaponBox.Font = Enum.Font.Gotham
 weaponBox.TextSize = 14
 weaponBox.TextColor3 = Color3.new(1,1,1)
-weaponBox.BackgroundColor3 = Color3.fromRGB(50,50,50)
+weaponBox.BackgroundColor3 = Color3.fromRGB(45,45,45)
 weaponBox.BorderSizePixel = 0
 
-local note = Instance.new("TextLabel", frame)
-note.Size = UDim2.new(1, -20, 0, 28)
-note.Position = UDim2.new(0, 10, 0, 12 + 36 + 7*48)
-note.BackgroundTransparency = 1
-note.Text = "ปุ่มเปิด/ปิดแบบ toggle — ปรับชื่ออาวุธแล้วกด Auto Equip หากต้องการให้ถืออัตโนมัติ"
-note.TextWrapped = true
-note.TextColor3 = Color3.fromRGB(180,180,180)
-note.Font = Enum.Font.Gotham
-note.TextSize = 12
-note.TextXAlignment = Enum.TextXAlignment.Left
+local info = Instance.new("TextLabel", frame)
+info.Size = UDim2.new(1, -20, 0, 36)
+info.Position = UDim2.new(0, 10, 0, 56+48*6 + 40)
+info.BackgroundTransparency = 1
+info.Text = "นี่เป็นเวอร์ชันสำหรับศึกษา — ไม่มีการเรียกใช้ Remote หรือแก้ workspace ใดๆ"
+info.TextWrapped = true
+info.TextColor3 = Color3.fromRGB(180,180,180)
+info.Font = Enum.Font.Gotham
+info.TextSize = 12
+info.TextXAlignment = Enum.TextXAlignment.Left
 
---===[ Helpers ]===--
-local function waitForCharacter()
-    local char, hrp, humanoid
-    repeat
-        char = player.Character or player.CharacterAdded:Wait()
-        hrp = char:FindFirstChild("HumanoidRootPart")
-        humanoid = char:FindFirstChild("Humanoid")
-        task.wait(0.1)
-    until hrp and humanoid and humanoid.Health > 0
-    return char, hrp, humanoid
-end
-
+-- Helper: set button visuals
 local function setButtonState(btn, enabled)
-    btn.Text = string.gsub(btn.Text, "✅", "") -- clear marks
-    btn.Text = string.gsub(btn.Text, "❌", "")
-    btn.Text = btn.Text .. " " .. (enabled and "✅" or "❌")
+    local baseText = (btn and btn.Text) or ""
+    baseText = string.gsub(baseText, "✅","")
+    baseText = string.gsub(baseText, "❌","")
+    baseText = string.match(baseText, "^[^%s].*") or baseText -- keep text
+    btn.Text = baseText .. " " .. (enabled and "✅" or "❌")
     btn.BackgroundColor3 = enabled and Color3.fromRGB(0,150,0) or Color3.fromRGB(70,70,70)
 end
 
--- set initial states
+-- Initial states
 setButtonState(zoomBtn, getgenv().AutoZoom)
 setButtonState(sukunaBtn, getgenv().AutoSukunaAkaza)
 setButtonState(mihawkBtn, getgenv().AutoMihawkSJW)
@@ -156,262 +131,137 @@ setButtonState(aizenBtn, getgenv().AutoAizen)
 setButtonState(hakiBtn, getgenv().AutoObservationHaki)
 setButtonState(equipBtn, getgenv().AutoEquipWeapon)
 
---===[ ProximityPrompt HoldDuration = 0 ]===--
-pcall(function()
-    for _, obj in pairs(workspace:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") then
-            obj.HoldDuration = 0
-        end
-    end
-    workspace.DescendantAdded:Connect(function(obj)
-        if obj:IsA("ProximityPrompt") then
-            obj.HoldDuration = 0
-        end
-    end)
-end)
-
---===[ Equip Weapon function ]===--
-local function equipWeaponNow(weaponName)
-    pcall(function()
-        local char = player.Character
-        if not char then return end
-        local humanoid = char:FindFirstChildOfClass("Humanoid")
-        if not humanoid then return end
-        -- prefer equip from backpack; if equipped already then skip
-        if char:FindFirstChild(weaponName) then
-            humanoid:EquipTool(char[weaponName])
-            return
-        end
-        local tool = player.Backpack:FindFirstChild(weaponName)
-        if tool then
-            humanoid:EquipTool(tool)
-        end
-    end)
+-- Stub functions (ปลอดภัย) — พิมพ์/แสดงว่าควรจะทำอะไรในเวอร์ชันจริง
+local function stub_equipWeapon(weaponName)
+    -- ในเวอร์ชันจริง: จะเรียก equip จาก Backpack/Character
+    warn("[STUB] equipWeapon called -> " .. tostring(weaponName))
 end
 
---===[ Generic find boss helper ]===--
-local function findBossOnIsland(islandName, bossName)
-    local success, res = pcall(function()
-        local area = workspace.Main and workspace.Main.Characters and workspace.Main.Characters[islandName]
-        if not area then return nil end
-        local bossFolder = area:FindFirstChild("Boss")
-        if not bossFolder then return nil end
-        for _,v in pairs(bossFolder:GetChildren()) do
-            if v.Name == bossName and v:FindFirstChild("HumanoidRootPart") and v:FindFirstChild("Humanoid") and v.Humanoid.Health > 0 then
-                return v
-            end
-        end
-        return nil
-    end)
-    return res
+local function stub_attackBoss(bossName)
+    -- ในเวอร์ชันจริง: จะหา boss ใน workspace แล้วเคลื่อน/ใช้ skill
+    warn("[STUB] attackBoss called -> " .. tostring(bossName))
 end
 
-local function teleportToQuest(cframe)
-    pcall(function()
-        if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
-            player.Character.HumanoidRootPart.CFrame = cframe
-        end
-    end)
+local function stub_teleportToQuest(qname)
+    warn("[STUB] teleportToQuest called -> " .. tostring(qname))
 end
 
---===[ Attack function (generic) ]===--
-local function attackTargetWithSword(target, weaponName)
-    pcall(function()
-        if not Remotes then return end
-        if target and target:FindFirstChild("HumanoidRootPart") then
-            local char, hrp = waitForCharacter()
-            local hrpTarget = target.HumanoidRootPart
-            task.wait(0.12)
-            if hrp and hrpTarget then
-                hrp.CFrame = hrpTarget.CFrame * CFrame.new(0,0,5)
-            end
-            equipWeaponNow(weaponName)
-            task.wait(0.08)
-            -- M1
-            pcall(function()
-                Remotes:FireServer("Server","Sword","M1s",weaponName,1)
-            end)
-            task.wait(getgenv().SkillDelay or SKILL_DELAY)
-            -- Skill1-4
-            for i=1,4 do
-                pcall(function()
-                    Remotes:FireServer("Server","Sword","Skill"..i,weaponName, (hrpTarget and hrpTarget.Position) or Vector3.new(0,0,0))
-                end)
-                task.wait(getgenv().SkillDelay or SKILL_DELAY)
-            end
-        end
-    end)
+local function stub_fireObservationHaki()
+    warn("[STUB] fire Observation Haki (would call Remotes in real script)")
 end
 
---===[ Auto loops ]===--
-
--- Auto Observation Haki (fires observation repeatedly)
-task.spawn(function()
-    while task.wait(0.6) do
-        if getgenv().AutoObservationHaki then
-            pcall(function()
-                if Remotes then Remotes:FireServer("Server","Misc","Observation",1) end
-            end)
-        end
-    end
-end)
-
--- Auto Haki (Misc Haki once per second) -- optional but harmless
-task.spawn(function()
-    while task.wait(1) do
-        if getgenv().AutoObservationHaki then
-            pcall(function()
-                if Remotes then Remotes:FireServer("Server","Misc","Haki",1) end
-            end)
-        end
-    end
-end)
-
--- Auto Equip loop (keeps equipping requested weapon if toggle on)
-task.spawn(function()
-    while task.wait(1) do
-        if getgenv().AutoEquipWeapon then
-            local w = weaponBox.Text or getgenv().AutoWeaponName
-            if w and w ~= "" then
-                getgenv().AutoWeaponName = w
-                equipWeaponNow(w)
-            end
-        end
-    end
-end)
-
--- Auto Aizen loop
-task.spawn(function()
-    while task.wait(0.5) do
-        if getgenv().AutoAizen then
-            local boss = findBossOnIsland("Huecomundo","Aizen")
-            if boss then
-                attackTargetWithSword(boss, getgenv().AutoWeaponName or DEFAULT_WEAPON)
-            else
-                teleportToQuest(QUEST_CFRAME_AIZEN)
-            end
-        end
-    end
-end)
-
--- Auto Sukuna + Akaza loop (Throne Isle)
+-- Auto loops (call stubs) — study behaviour only
 task.spawn(function()
     while task.wait(0.5) do
         if getgenv().AutoSukunaAkaza then
-            local boss = findBossOnIsland("Throne Isle","Sukuna") or findBossOnIsland("Throne Isle","Akaza")
-            if boss then
-                attackTargetWithSword(boss, getgenv().AutoWeaponName or DEFAULT_WEAPON)
-            else
-                teleportToQuest(QUEST_CFRAME_SUKUNA)
-            end
+            -- priority: Sukuna then Akaza (demo)
+            stub_attackBoss("Sukuna (simulated)")
+            task.wait(getgenv().SkillDelay or SKILL_DELAY)
         end
     end
 end)
 
--- Track latest SJW (Sung Jin Woo) every 10s (so Mihawk routine can prefer SJW)
-local latestSJW = nil
-task.spawn(function()
-    while true do
-        pcall(function()
-            local area = workspace.Main and workspace.Main.Characters and workspace.Main.Characters["Rogue Town"]
-            local bossFolder = area and area:FindFirstChild("Boss")
-            local sjw = bossFolder and bossFolder:FindFirstChild("Sung Jin Woo")
-            if sjw and sjw:FindFirstChild("Humanoid") and sjw.Humanoid.Health > 0 then
-                latestSJW = sjw
-            else
-                latestSJW = nil
-            end
-        end)
-        task.wait(10)
-    end
-end)
-
--- Auto Mihawk + SJW loop
 task.spawn(function()
     while task.wait(0.5) do
         if getgenv().AutoMihawkSJW then
-            local sjw = latestSJW
-            if sjw then
-                attackTargetWithSword(sjw, getgenv().AutoWeaponName or DEFAULT_WEAPON)
+            -- prefer SJW if exists (simulated)
+            local foundSJW = math.random() > 0.5 -- simulate chance
+            if foundSJW then
+                stub_attackBoss("Sung Jin Woo (simulated)")
             else
-                local mihawk = nil
-                pcall(function()
-                    local area = workspace.Main and workspace.Main.Characters and workspace.Main.Characters["Glacier Isle"]
-                    if area and area:FindFirstChild("Mihawk") then
-                        mihawk = area.Mihawk:FindFirstChild("Mihawk") or area.Mihawk
-                    end
-                end)
-                if mihawk and mihawk:FindFirstChild("Humanoid") and mihawk.Humanoid.Health > 0 then
-                    attackTargetWithSword(mihawk, getgenv().AutoWeaponName or DEFAULT_WEAPON)
-                else
-                    -- teleport to a known quest pos (use Sukuna quest as fallback)
-                    teleportToQuest(QUEST_CFRAME_SUKUNA)
-                end
+                stub_attackBoss("Mihawk (simulated)")
             end
+            task.wait(getgenv().SkillDelay or SKILL_DELAY)
         end
     end
 end)
 
---===[ Camera AutoZoom ]===--
-RunService.RenderStepped:Connect(function()
-    pcall(function()
-        local char = player.Character
-        if not char then return end
-        if not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Head") then return end
-        if getgenv().AutoZoom then
-            camera.CameraType = Enum.CameraType.Scriptable
-            local camPos = char.HumanoidRootPart.Position + Vector3.new(0,50,0)
-            camera.CFrame = CFrame.new(camPos, char.Head.Position)
-        else
-            camera.CameraType = Enum.CameraType.Custom
-            camera.CameraSubject = char:FindFirstChildOfClass("Humanoid")
+task.spawn(function()
+    while task.wait(0.5) do
+        if getgenv().AutoAizen then
+            stub_attackBoss("Aizen (simulated)")
+            task.wait(getgenv().SkillDelay or SKILL_DELAY)
         end
-    end)
+    end
 end)
 
---===[ Button connections ]===--
+task.spawn(function()
+    while task.wait(0.6) do
+        if getgenv().AutoObservationHaki then
+            stub_fireObservationHaki()
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(1) do
+        if getgenv().AutoEquipWeapon then
+            local w = weaponBox.Text or DEFAULT_WEAPON
+            getgenv().AutoWeaponName = w
+            stub_equipWeapon(w)
+        end
+    end
+end)
+
+-- AutoZoom (mock camera behavior: we won't change camera to avoid interfering)
+RunService.RenderStepped:Connect(function()
+    if getgenv().AutoZoom then
+        -- In study mode we only print; in real script you'd change camera.CFrame
+        -- Print less often to avoid spam; use a random small interval via task.wait in loops if needed
+        -- Here we do nothing (safe) or show small debug occasionally:
+    end
+end)
+
+-- Button connections
 zoomBtn.MouseButton1Click:Connect(function()
     getgenv().AutoZoom = not getgenv().AutoZoom
     setButtonState(zoomBtn, getgenv().AutoZoom)
+    warn("AutoZoom: " .. tostring(getgenv().AutoZoom))
 end)
 
 sukunaBtn.MouseButton1Click:Connect(function()
     getgenv().AutoSukunaAkaza = not getgenv().AutoSukunaAkaza
     setButtonState(sukunaBtn, getgenv().AutoSukunaAkaza)
+    warn("AutoSukuna+Akaza: " .. tostring(getgenv().AutoSukunaAkaza))
 end)
 
 mihawkBtn.MouseButton1Click:Connect(function()
     getgenv().AutoMihawkSJW = not getgenv().AutoMihawkSJW
     setButtonState(mihawkBtn, getgenv().AutoMihawkSJW)
+    warn("AutoMihawk+SJW: " .. tostring(getgenv().AutoMihawkSJW))
 end)
 
 aizenBtn.MouseButton1Click:Connect(function()
     getgenv().AutoAizen = not getgenv().AutoAizen
     setButtonState(aizenBtn, getgenv().AutoAizen)
+    warn("AutoAizen: " .. tostring(getgenv().AutoAizen))
 end)
 
 hakiBtn.MouseButton1Click:Connect(function()
     getgenv().AutoObservationHaki = not getgenv().AutoObservationHaki
     setButtonState(hakiBtn, getgenv().AutoObservationHaki)
+    warn("AutoObservationHaki: " .. tostring(getgenv().AutoObservationHaki))
 end)
 
 equipBtn.MouseButton1Click:Connect(function()
     getgenv().AutoEquipWeapon = not getgenv().AutoEquipWeapon
     setButtonState(equipBtn, getgenv().AutoEquipWeapon)
+    warn("AutoEquipWeapon: " .. tostring(getgenv().AutoEquipWeapon))
     if getgenv().AutoEquipWeapon then
         local w = weaponBox.Text or DEFAULT_WEAPON
         getgenv().AutoWeaponName = w
-        equipWeaponNow(w)
+        stub_equipWeapon(w)
     end
 end)
 
-weaponBox.FocusLost:Connect(function(enter)
-    local text = weaponBox.Text or DEFAULT_WEAPON
-    if text == "" then text = DEFAULT_WEAPON end
-    getgenv().AutoWeaponName = text
-    weaponBox.Text = text
+weaponBox.FocusLost:Connect(function(enterPressed)
+    local txt = weaponBox.Text
+    if txt == nil or txt == "" then
+        txt = DEFAULT_WEAPON
+        weaponBox.Text = txt
+    end
+    getgenv().AutoWeaponName = txt
+    warn("Weapon set to: " .. tostring(txt))
 end)
 
---===[ Final default initial states ]===--
--- keep UI ready; nothing auto-enable unless user toggles
-print("Unified AutoFarm UI loaded. Controls: Auto Zoom, Sukuna+Akaza, Mihawk+SJW, Aizen, Observation Haki, Auto Equip Weapon.")
+print("Safe study UI loaded. Buttons simulate actions via prints/warnings. No Remotes or workspace calls were made.")
