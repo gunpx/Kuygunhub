@@ -1,4 +1,4 @@
---// 🔥 AutoFarm Teacher + Yuta + AutoZoom + AutoEquip Weapon (UI ใหม่) 🔥
+--// 🔥 AutoFarm Mihawk + SJW + Yuta + AutoZoom + AutoEquip Weapon + Infinite Haki (UI ใหม่) 🔥
 --// by กัน
 
 local player = game:GetService("Players").LocalPlayer
@@ -14,7 +14,7 @@ gui.Name = "FarmControlUI"
 gui.ResetOnSpawn = false
 
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.new(0, 220, 0, 110)
+frame.Size = UDim2.new(0, 220, 0, 150)
 frame.Position = UDim2.new(0.8, 0, 0.1, 0)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BackgroundTransparency = 0.1
@@ -37,13 +37,15 @@ end
 
 local autoFarmBtn = makeButton("AutoFarm 🔴", 1)
 local autoZoomBtn = makeButton("AutoZoom 🔴", 2)
+local autoObsHakiBtn = makeButton("Observation Haki 🔴", 3)
 
 --===[ ตัวแปรสถานะ ]===--
-getgenv().AutoFarmTeacher = false
+getgenv().AutoFarmMihawk = false
 getgenv().AutoZoom = true
 getgenv().gx = true
-local Weapon = "Spiritual Katana" -- ชื่ออาวุธใหม่
-local Delay = 0.001 -- ปรับ delay ให้เร็วมาก
+getgenv().AutoObservationHaki = false
+local Weapon = "Dual Dagger"
+local Delay = 0.3
 
 --===[ ปรับ ProximityPrompt ]===--
 for _, obj in pairs(workspace:GetDescendants()) do
@@ -54,7 +56,7 @@ end
 
 --===[ ฟังก์ชัน Toggle AutoFarm ]===--
 local function ToggleAutoFarm(state)
-	getgenv().AutoFarmTeacher = state
+	getgenv().AutoFarmMihawk = state
 	if state then
 		autoFarmBtn.Text = "AutoFarm 🟢"
 		autoFarmBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
@@ -63,9 +65,8 @@ local function ToggleAutoFarm(state)
 		autoFarmBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
 	end
 end
-
 autoFarmBtn.MouseButton1Click:Connect(function()
-	ToggleAutoFarm(not getgenv().AutoFarmTeacher)
+	ToggleAutoFarm(not getgenv().AutoFarmMihawk)
 end)
 
 --===[ ฟังก์ชัน AutoZoom ]===--
@@ -97,14 +98,36 @@ local function EnableAutoZoom(state)
 		end
 	end
 end
-
 autoZoomBtn.MouseButton1Click:Connect(function()
 	EnableAutoZoom(not getgenv().AutoZoom)
 end)
 
---===[ ฟังก์ชันระบบ ]===--
-local HakiArgs = {"Server","Misc","Haki",1}
+--===[ Toggle Observation Haki ]===--
+local obsHakiConn
+local function ToggleObservationHaki(state)
+	getgenv().AutoObservationHaki = state
+	if state then
+		autoObsHakiBtn.Text = "Observation Haki 🟢"
+		autoObsHakiBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+		obsHakiConn = task.spawn(function()
+			while getgenv().AutoObservationHaki do
+				pcall(function()
+					Remotes:FireServer("Server","Misc","Observation",1)
+				end)
+				task.wait(0.1)
+			end
+		end)
+	else
+		autoObsHakiBtn.Text = "Observation Haki 🔴"
+		autoObsHakiBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+	end
+end
+autoObsHakiBtn.MouseButton1Click:Connect(function()
+	ToggleObservationHaki(not getgenv().AutoObservationHaki)
+end)
 
+--===[ ฟังก์ชันระบบ Haki ]===--
+local HakiArgs = {"Server","Misc","Haki",1}
 local function ActivateHaki()
 	pcall(function()
 		Remotes:FireServer(unpack(HakiArgs))
@@ -144,8 +167,8 @@ task.spawn(function()
 	end
 end)
 
--- จุดวาร์ปกลับไป NPC รับเควส Teacher
-local deathPosition = CFrame.new(1045.44641, 4.001659134, -135.367126, -0.958416879, 7.041701213e-08, 0.28537181, -8.65245227e-08, 1, -4.38698556e-08, -0.28537181, -6.67249367e-08, -0.958416879)
+-- จุดวาร์ปกลับ
+local deathPosition = CFrame.new(-30.7399998, 2.22399998, 156.429993)
 
 --===[ ฟังก์ชันตีบอส + ถืออาวุธ ]===--
 local function AttackBoss(bossModel)
@@ -154,7 +177,7 @@ local function AttackBoss(bossModel)
 	local hum = bossModel:FindFirstChild("Humanoid")
 
 	if Mon and hum and hum.Health > 0 then
-		AutoEquipWeapon() -- ✅ ถืออาวุธอัตโนมัติ
+		AutoEquipWeapon()
 		hrp.CFrame = Mon.CFrame * CFrame.new(0,0,5)
 		Remotes:FireServer("Server","Sword","M1s",Weapon,1)
 		task.wait(0.2)
@@ -166,6 +189,23 @@ local function AttackBoss(bossModel)
 	end
 	return false
 end
+
+--===[ ตรวจ SJW ทุก 10 วิ ]===--
+local latestSJW = nil
+task.spawn(function()
+	while true do
+		local sjwArea = workspace.Main.Characters:FindFirstChild("Rogue Town")
+		local sjwBossFolder = sjwArea and sjwArea:FindFirstChild("Boss")
+		local sjw = sjwBossFolder and sjwBossFolder:FindFirstChild("Sung Jin Woo")
+
+		if sjw and sjw:FindFirstChild("Humanoid") and sjw.Humanoid.Health > 0 then
+			latestSJW = sjw
+		else
+			latestSJW = nil
+		end
+		task.wait(10)
+	end
+end)
 
 --===[ ตรวจ Yuta ทุก 10 วิ ]===--
 local latestYuta = nil
@@ -187,16 +227,20 @@ end)
 --===[ ระบบ AutoFarm หลัก ]===--
 task.spawn(function()
 	while true do
-		if getgenv().AutoFarmTeacher and getgenv().gx then
+		if getgenv().AutoFarmMihawk and getgenv().gx then
 			pcall(function()
 				local char, hrp = waitForCharacter()
-				local teacher = workspace.Main.Characters["Jujutsu Highschool"]["Sorcerer's Teacher"]["Sorcerer's Teacher"]
+				local mihawk = workspace.Main.Characters["Glacier Isle"].Mihawk:FindFirstChild("Mihawk")
 				local yutaBoss = latestYuta
+				local sjwBoss = latestSJW
 
 				if yutaBoss then
 					AttackBoss(yutaBoss)
-				elseif teacher and teacher:FindFirstChild("Humanoid") and teacher.Humanoid.Health > 0 then
-					AttackBoss(teacher)
+				elseif sjwBoss then
+					AttackBoss(sjwBoss)
+				elseif mihawk and mihawk:FindFirstChild("Humanoid") and mihawk.Humanoid.Health > 0 then
+					hrp.CFrame = mihawk.HumanoidRootPart.CFrame * CFrame.new(0,0,5)
+					AttackBoss(mihawk)
 				else
 					hrp.CFrame = deathPosition
 				end
@@ -206,8 +250,9 @@ task.spawn(function()
 	end
 end)
 
---===[ เปิด AutoFarm + AutoZoom ตอนเริ่มต้น ]===--
+--===[ เปิด AutoFarm + AutoZoom + Observation Haki ตอนเริ่มต้น ]===--
 task.delay(2, function()
 	ToggleAutoFarm(true)
 	EnableAutoZoom(true)
+	ToggleObservationHaki(true)
 end)
