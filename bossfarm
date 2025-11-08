@@ -4,8 +4,8 @@
 --===[ Settings ]===--
 local QUEST_CFRAME = CFrame.new(537.64801, 8.62301731, -542.656372, -0.766061664, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, -0.766061664)
 local ISLAND = "Throne Isle"
-local WEAPON = "Dual Dagger"
-local DELAY = 0.3
+local WEAPON = "Spiritual Katana"
+local DELAY = 0.001
 
 --===[ Services ]===--
 local Players = game:GetService("Players")
