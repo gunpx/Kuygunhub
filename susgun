@@ -44,8 +44,8 @@ getgenv().AutoFarmMihawk = false
 getgenv().AutoZoom = true
 getgenv().gx = true
 getgenv().AutoObservationHaki = false
-local Weapon = "Dual Dagger"
-local Delay = 0.3
+local Weapon = "Spiritual Katana"
+local Delay = 0.001
 
 --===[ ปรับ ProximityPrompt ]===--
 for _, obj in pairs(workspace:GetDescendants()) do
