@@ -44,7 +44,7 @@ getgenv().AutoFarmMihawk = false
 getgenv().AutoZoom = true
 getgenv().gx = true
 getgenv().AutoObservationHaki = false
-local Weapon = "Spiritual Katana"
+local Weapon = "Tensa Zangetsu"
 local Delay = 0.001
 
 --===[ ปรับ ProximityPrompt ]===--
