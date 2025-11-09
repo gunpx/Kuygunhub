@@ -1,16 +1,19 @@
---// ⚔️ AutoFarm Sukuna + Akaza + Gojo + AutoZoom + AutoSkill + M1 + AutoHaki + Hold=0 ⚔️
---// by กัน (เวอร์ชันเพิ่มออโต้ถือดาบ + Gojo)
+--// ⚔️ AutoFarm Sukuna + Akaza + Gojo + AutoZoom + AutoSkill + M1 + AutoHaki + AutoObservation + Hold=0 + AutoSpawn Gojo ⚔️
+--// by กัน (เวอร์ชันล่าสุดรวม Infinity Stone Loop)
 
 --===[ Settings ]===--
 local QUEST_CFRAME = CFrame.new(537.64801, 8.62301731, -542.656372, -0.766061664, 0, 0.642767608, 0, 1, 0, -0.642767608, 0, -0.766061664)
 local ISLAND = "Throne Isle"
-local WEAPON = "Spiritual Katana"
+local WEAPON = "Tensa Zangetsu"
 local DELAY = 0.001
 
 --===[ Services ]===--
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local GuiService = game:GetService("GuiService")
+local vim = game:GetService("VirtualInputManager")
+
 local player = Players.LocalPlayer
 local Remotes = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Serverside")
 local camera = workspace.CurrentCamera
@@ -19,7 +22,7 @@ local camera = workspace.CurrentCamera
 getgenv().AutoZoom = false
 getgenv().AutoSukuna = false
 getgenv().AutoAkaza = false
-getgenv().AutoGojo = false -- ✅ เพิ่ม Gojo
+getgenv().AutoGojo = false
 
 --===[ UI Setup ]===--
 local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
@@ -52,7 +55,7 @@ end
 local zoomBtn = makeButton("Auto Zoom ❌", 1)
 local sukunaBtn = makeButton("Auto Sukuna ❌", 2)
 local akazaBtn = makeButton("Auto Akaza ❌", 3)
-local gojoBtn = makeButton("Auto Gojo ❌", 4) -- ✅ ปุ่มใหม่
+local gojoBtn = makeButton("Auto Gojo ❌", 4)
 
 --===[ HoldDuration 0 ]===--
 for _, obj in pairs(workspace:GetDescendants()) do
@@ -62,11 +65,14 @@ workspace.DescendantAdded:Connect(function(obj)
 	if obj:IsA("ProximityPrompt") then obj.HoldDuration = 0 end
 end)
 
---===[ Auto Haki ]===--
+--===[ Auto Haki + Observation (Infinity Stone Loop) ]===--
 task.spawn(function()
 	while task.wait(1) do
 		pcall(function()
+			-- ⚡ Enchant Haki
 			Remotes:FireServer("Server", "Misc", "Haki", 1)
+			-- 👁️ Observation Haki (Infinity Stone Loop)
+			Remotes:FireServer("Server", "Misc", "Observation", 1)
 		end)
 	end
 end)
@@ -103,9 +109,6 @@ end
 
 local function equipWeapon()
 	pcall(function()
-		if not player.Backpack:FindFirstChild(WEAPON) and player.Character:FindFirstChild(WEAPON) then
-			return
-		end
 		local tool = player.Backpack:FindFirstChild(WEAPON)
 		if tool then
 			player.Character.Humanoid:EquipTool(tool)
@@ -131,6 +134,29 @@ local function attack(target)
 	end)
 end
 
+--===[ Auto Spawn Gojo ]===--
+local function spawnGojo()
+	pcall(function()
+		local bossGUI = player:WaitForChild("PlayerGui"):WaitForChild("Button"):WaitForChild("Boss Spawn")
+		bossGUI.Visible = true
+
+		local spawnBtn = bossGUI:WaitForChild("Spawn"):WaitForChild("Button")
+		GuiService.SelectedObject = spawnBtn
+		task.wait(0.2)
+		vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+		task.wait(0.05)
+		vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+		task.wait(0.3)
+
+		local gojoButton = bossGUI:WaitForChild("Frame"):WaitForChild("Gojo"):WaitForChild("Button")
+		GuiService.SelectedObject = gojoButton
+		task.wait(0.2)
+		vim:SendKeyEvent(true, Enum.KeyCode.Return, false, game)
+		task.wait(0.05)
+		vim:SendKeyEvent(false, Enum.KeyCode.Return, false, game)
+	end)
+end
+
 --===[ Auto Loop ]===--
 task.spawn(function()
 	while task.wait(0.5) do
@@ -142,9 +168,13 @@ task.spawn(function()
 			local boss = findBoss("Akaza")
 			if boss then attack(boss) else teleportToQuest() end
 		end
-		if getgenv().AutoGojo then -- ✅ เพิ่ม Gojo
+		if getgenv().AutoGojo then
 			local boss = findBoss("Gojo")
-			if boss then attack(boss) else teleportToQuest() end
+			if not boss then
+				spawnGojo()
+			else
+				attack(boss)
+			end
 		end
 	end
 end)
