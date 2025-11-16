@@ -1,5 +1,5 @@
---// 🔥 AutoFarm Mihawk + SJW + Yuta + AutoZoom + AutoEquip Weapon + Infinite Haki (UI ใหม่) 🔥
---// by กัน
+--// 🔥 AutoFarm Mihawk + SJW + Yuta + Silver Fang + AutoZoom + AutoEquip Weapon + Infinite Haki (UI ใหม่) 🔥
+--// by กัน + เพิ่ม Silver Fang
 
 local player = game:GetService("Players").LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -22,17 +22,17 @@ frame.Active = true
 frame.Draggable = true
 
 local function makeButton(name, order)
-	local btn = Instance.new("TextButton", frame)
-	btn.Size = UDim2.new(1, -20, 0, 40)
-	btn.Position = UDim2.new(0, 10, 0, (order - 1) * 50 + 10)
-	btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-	btn.TextColor3 = Color3.new(1,1,1)
-	btn.Font = Enum.Font.GothamBold
-	btn.TextSize = 16
-	btn.Text = name
-	btn.AutoButtonColor = true
-	btn.BorderSizePixel = 0
-	return btn
+    local btn = Instance.new("TextButton", frame)
+    btn.Size = UDim2.new(1, -20, 0, 40)
+    btn.Position = UDim2.new(0, 10, 0, (order - 1) * 50 + 10)
+    btn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 16
+    btn.Text = name
+    btn.AutoButtonColor = true
+    btn.BorderSizePixel = 0
+    return btn
 end
 
 local autoFarmBtn = makeButton("AutoFarm 🔴", 1)
@@ -49,122 +49,122 @@ local Delay = 0.001
 
 --===[ ปรับ ProximityPrompt ]===--
 for _, obj in pairs(workspace:GetDescendants()) do
-	if obj:IsA("ProximityPrompt") then
-		obj.HoldDuration = 0
-	end
+    if obj:IsA("ProximityPrompt") then
+        obj.HoldDuration = 0
+    end
 end
 
 --===[ ฟังก์ชัน Toggle AutoFarm ]===--
 local function ToggleAutoFarm(state)
-	getgenv().AutoFarmMihawk = state
-	if state then
-		autoFarmBtn.Text = "AutoFarm 🟢"
-		autoFarmBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
-	else
-		autoFarmBtn.Text = "AutoFarm 🔴"
-		autoFarmBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-	end
+    getgenv().AutoFarmMihawk = state
+    if state then
+        autoFarmBtn.Text = "AutoFarm 🟢"
+        autoFarmBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    else
+        autoFarmBtn.Text = "AutoFarm 🔴"
+        autoFarmBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    end
 end
 autoFarmBtn.MouseButton1Click:Connect(function()
-	ToggleAutoFarm(not getgenv().AutoFarmMihawk)
+    ToggleAutoFarm(not getgenv().AutoFarmMihawk)
 end)
 
 --===[ ฟังก์ชัน AutoZoom ]===--
 local autoZoomConn
 local function EnableAutoZoom(state)
-	getgenv().AutoZoom = state
-	if state then
-		autoZoomBtn.Text = "AutoZoom 🟢"
-		autoZoomBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+    getgenv().AutoZoom = state
+    if state then
+        autoZoomBtn.Text = "AutoZoom 🟢"
+        autoZoomBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
 
-		autoZoomConn = runService.RenderStepped:Connect(function()
-			if not getgenv().AutoZoom then return end
-			local char = player.Character or player.CharacterAdded:Wait()
-			local hrp = char:FindFirstChild("HumanoidRootPart")
-			if not hrp then return end
+        autoZoomConn = runService.RenderStepped:Connect(function()
+            if not getgenv().AutoZoom then return end
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if not hrp then return end
 
-			camera.CameraType = Enum.CameraType.Scriptable
-			local maxZoom = player.CameraMaxZoomDistance or 128
-			local zoom = math.min(maxZoom, 100)
-			camera.CFrame = hrp.CFrame * CFrame.new(0, zoom, 0) * CFrame.Angles(math.rad(-90),0,0)
-		end)
-	else
-		autoZoomBtn.Text = "AutoZoom 🔴"
-		autoZoomBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-		camera.CameraType = Enum.CameraType.Custom
-		if autoZoomConn then
-			autoZoomConn:Disconnect()
-			autoZoomConn = nil
-		end
-	end
+            camera.CameraType = Enum.CameraType.Scriptable
+            local maxZoom = player.CameraMaxZoomDistance or 128
+            local zoom = math.min(maxZoom, 100)
+            camera.CFrame = hrp.CFrame * CFrame.new(0, zoom, 0) * CFrame.Angles(math.rad(-90),0,0)
+        end)
+    else
+        autoZoomBtn.Text = "AutoZoom 🔴"
+        autoZoomBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+        camera.CameraType = Enum.CameraType.Custom
+        if autoZoomConn then
+            autoZoomConn:Disconnect()
+            autoZoomConn = nil
+        end
+    end
 end
 autoZoomBtn.MouseButton1Click:Connect(function()
-	EnableAutoZoom(not getgenv().AutoZoom)
+    EnableAutoZoom(not getgenv().AutoZoom)
 end)
 
 --===[ Toggle Observation Haki ]===--
 local obsHakiConn
 local function ToggleObservationHaki(state)
-	getgenv().AutoObservationHaki = state
-	if state then
-		autoObsHakiBtn.Text = "Observation Haki 🟢"
-		autoObsHakiBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
-		obsHakiConn = task.spawn(function()
-			while getgenv().AutoObservationHaki do
-				pcall(function()
-					Remotes:FireServer("Server","Misc","Observation",1)
-				end)
-				task.wait(0.1)
-			end
-		end)
-	else
-		autoObsHakiBtn.Text = "Observation Haki 🔴"
-		autoObsHakiBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
-	end
+    getgenv().AutoObservationHaki = state
+    if state then
+        autoObsHakiBtn.Text = "Observation Haki 🟢"
+        autoObsHakiBtn.BackgroundColor3 = Color3.fromRGB(0,170,0)
+        obsHakiConn = task.spawn(function()
+            while getgenv().AutoObservationHaki do
+                pcall(function()
+                    Remotes:FireServer("Server","Misc","Observation",1)
+                end)
+                task.wait(0.1)
+            end
+        end)
+    else
+        autoObsHakiBtn.Text = "Observation Haki 🔴"
+        autoObsHakiBtn.BackgroundColor3 = Color3.fromRGB(70,70,70)
+    end
 end
 autoObsHakiBtn.MouseButton1Click:Connect(function()
-	ToggleObservationHaki(not getgenv().AutoObservationHaki)
+    ToggleObservationHaki(not getgenv().AutoObservationHaki)
 end)
 
 --===[ ฟังก์ชันระบบ Haki ]===--
 local HakiArgs = {"Server","Misc","Haki",1}
 local function ActivateHaki()
-	pcall(function()
-		Remotes:FireServer(unpack(HakiArgs))
-	end)
+    pcall(function()
+        Remotes:FireServer(unpack(HakiArgs))
+    end)
 end
 
 local function waitForCharacter()
-	local char, hrp, humanoid
-	repeat
-		char = player.Character or player.CharacterAdded:Wait()
-		hrp = char:FindFirstChild("HumanoidRootPart")
-		humanoid = char:FindFirstChild("Humanoid")
-		task.wait(0.1)
-	until hrp and humanoid and humanoid.Health > 0
-	return char, hrp, humanoid
+    local char, hrp, humanoid
+    repeat
+        char = player.Character or player.CharacterAdded:Wait()
+        hrp = char:FindFirstChild("HumanoidRootPart")
+        humanoid = char:FindFirstChild("Humanoid")
+        task.wait(0.1)
+    until hrp and humanoid and humanoid.Health > 0
+    return char, hrp, humanoid
 end
 
 --===[ ฟังก์ชันถืออาวุธอัตโนมัติ ]===--
 local function AutoEquipWeapon()
-	pcall(function()
-		local backpack = player:WaitForChild("Backpack")
-		local tool = backpack:FindFirstChild(Weapon)
-		if tool then
-			tool.Parent = player.Character
-		end
-	end)
+    pcall(function()
+        local backpack = player:WaitForChild("Backpack")
+        local tool = backpack:FindFirstChild(Weapon)
+        if tool then
+            tool.Parent = player.Character
+        end
+    end)
 end
 
 --===[ Auto Haki loop ]===--
 task.spawn(function()
-	while true do
-		local _, _, humanoid = waitForCharacter()
-		if humanoid and humanoid.Health > 0 then
-			ActivateHaki()
-		end
-		task.wait(1)
-	end
+    while true do
+        local _, _, humanoid = waitForCharacter()
+        if humanoid and humanoid.Health > 0 then
+            ActivateHaki()
+        end
+        task.wait(1)
+    end
 end)
 
 -- จุดวาร์ปกลับ
@@ -172,87 +172,112 @@ local deathPosition = CFrame.new(-30.7399998, 2.22399998, 156.429993)
 
 --===[ ฟังก์ชันตีบอส + ถืออาวุธ ]===--
 local function AttackBoss(bossModel)
-	local char, hrp = waitForCharacter()
-	local Mon = bossModel:FindFirstChild("HumanoidRootPart")
-	local hum = bossModel:FindFirstChild("Humanoid")
+    local char, hrp = waitForCharacter()
+    local Mon = bossModel:FindFirstChild("HumanoidRootPart")
+    local hum = bossModel:FindFirstChild("Humanoid")
 
-	if Mon and hum and hum.Health > 0 then
-		AutoEquipWeapon()
-		hrp.CFrame = Mon.CFrame * CFrame.new(0,0,5)
-		Remotes:FireServer("Server","Sword","M1s",Weapon,1)
-		task.wait(0.2)
-		for i=1,4 do
-			Remotes:FireServer("Server","Sword","Skill"..i,Weapon)
-			task.wait(Delay)
-		end
-		return true
-	end
-	return false
+    if Mon and hum and hum.Health > 0 then
+        AutoEquipWeapon()
+        hrp.CFrame = Mon.CFrame * CFrame.new(0,0,5)
+        Remotes:FireServer("Server","Sword","M1s",Weapon,1)
+        task.wait(0.2)
+        for i=1,4 do
+            Remotes:FireServer("Server","Sword","Skill"..i,Weapon)
+            task.wait(Delay)
+        end
+        return true
+    end
+    return false
 end
 
 --===[ ตรวจ SJW ทุก 10 วิ ]===--
 local latestSJW = nil
 task.spawn(function()
-	while true do
-		local sjwArea = workspace.Main.Characters:FindFirstChild("Rogue Town")
-		local sjwBossFolder = sjwArea and sjwArea:FindFirstChild("Boss")
-		local sjw = sjwBossFolder and sjwBossFolder:FindFirstChild("Sung Jin Woo")
+    while true do
+        local sjwArea = workspace.Main.Characters:FindFirstChild("Rogue Town")
+        local sjwBossFolder = sjwArea and sjwArea:FindFirstChild("Boss")
+        local sjw = sjwBossFolder and sjwBossFolder:FindFirstChild("Sung Jin Woo")
 
-		if sjw and sjw:FindFirstChild("Humanoid") and sjw.Humanoid.Health > 0 then
-			latestSJW = sjw
-		else
-			latestSJW = nil
-		end
-		task.wait(10)
-	end
+        if sjw and sjw:FindFirstChild("Humanoid") and sjw.Humanoid.Health > 0 then
+            latestSJW = sjw
+        else
+            latestSJW = nil
+        end
+        task.wait(10)
+    end
+end)
+
+--===[ ตรวจ Silver Fang ทุก 10 วิ (เกิดสลับกับ SJW) ]===--
+local latestSilverFang = nil
+task.spawn(function()
+    while true do
+        local area = workspace.Main.Characters:FindFirstChild("Rogue Town")
+        local bossFolder = area and area:FindFirstChild("Boss")
+        local silverFang = bossFolder and bossFolder:FindFirstChild("Silver Fang")
+
+        if silverFang and silverFang:FindFirstChild("Humanoid") and silverFang.Humanoid.Health > 0 then
+            latestSilverFang = silverFang
+        else
+            latestSilverFang = nil
+        end
+
+        task.wait(10)
+    end
 end)
 
 --===[ ตรวจ Yuta ทุก 10 วิ ]===--
 local latestYuta = nil
 task.spawn(function()
-	while true do
-		local yutaArea = workspace.Main.Characters:FindFirstChild("Jujutsu Highschool")
-		local yutaBossFolder = yutaArea and yutaArea:FindFirstChild("Boss")
-		local yuta = yutaBossFolder and yutaBossFolder:FindFirstChild("Yuta")
+    while true do
+        local yutaArea = workspace.Main.Characters:FindFirstChild("Jujutsu Highschool")
+        local yutaBossFolder = yutaArea and yutaArea:FindFirstChild("Boss")
+        local yuta = yutaBossFolder and yutaBossFolder:FindFirstChild("Yuta")
 
-		if yuta and yuta:FindFirstChild("Humanoid") and yuta.Humanoid.Health > 0 then
-			latestYuta = yuta
-		else
-			latestYuta = nil
-		end
-		task.wait(10)
-	end
+        if yuta and yuta:FindFirstChild("Humanoid") and yuta.Humanoid.Health > 0 then
+            latestYuta = yuta
+        else
+            latestYuta = nil
+        end
+        task.wait(10)
+    end
 end)
 
 --===[ ระบบ AutoFarm หลัก ]===--
 task.spawn(function()
-	while true do
-		if getgenv().AutoFarmMihawk and getgenv().gx then
-			pcall(function()
-				local char, hrp = waitForCharacter()
-				local mihawk = workspace.Main.Characters["Glacier Isle"].Mihawk:FindFirstChild("Mihawk")
-				local yutaBoss = latestYuta
-				local sjwBoss = latestSJW
+    while true do
+        if getgenv().AutoFarmMihawk and getgenv().gx then
+            pcall(function()
+                local char, hrp = waitForCharacter()
+                local mihawk = workspace.Main.Characters["Glacier Isle"].Mihawk:FindFirstChild("Mihawk")
+                local yutaBoss = latestYuta
+                local sjwBoss = latestSJW
+                local silverFangBoss = latestSilverFang
 
-				if yutaBoss then
-					AttackBoss(yutaBoss)
-				elseif sjwBoss then
-					AttackBoss(sjwBoss)
-				elseif mihawk and mihawk:FindFirstChild("Humanoid") and mihawk.Humanoid.Health > 0 then
-					hrp.CFrame = mihawk.HumanoidRootPart.CFrame * CFrame.new(0,0,5)
-					AttackBoss(mihawk)
-				else
-					hrp.CFrame = deathPosition
-				end
-			end)
-		end
-		task.wait(0.4)
-	end
+                -- 🔁 ลำดับการตี (ปรับได้ตามใจ)
+                -- สมมติ: Yuta > SJW > Silver Fang > Mihawk
+                -- แต่เพราะ SJW กับ Silver Fang ผลัดกันเกิด ลอจิกนี้จะ auto รองรับอยู่แล้ว
+
+                if yutaBoss then
+                    AttackBoss(yutaBoss)
+                elseif sjwBoss then
+                    AttackBoss(sjwBoss)
+                elseif silverFangBoss then
+                    AttackBoss(silverFangBoss)
+                elseif mihawk and mihawk:FindFirstChild("Humanoid") and mihawk.Humanoid.Health > 0 then
+                    hrp.CFrame = mihawk.HumanoidRootPart.CFrame * CFrame.new(0,0,5)
+                    AttackBoss(mihawk)
+                else
+                    hrp.CFrame = deathPosition
+                end
+            end)
+        end
+        task.wait(0.4)
+    end
 end)
 
 --===[ เปิด AutoFarm + AutoZoom + Observation Haki ตอนเริ่มต้น ]===--
 task.delay(2, function()
-	ToggleAutoFarm(true)
-	EnableAutoZoom(true)
-	ToggleObservationHaki(true)
+    ToggleAutoFarm(true)
+    EnableAutoZoom(true)
+    ToggleObservationHaki(true)
 end)
