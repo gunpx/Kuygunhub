@@ -1,5 +1,5 @@
 --// 🔥 AutoFarm Mihawk + SJW + Yuta + Silver Fang + AutoZoom + AutoEquip Weapon + Infinite Haki (UI ใหม่) 🔥
---// by กัน + เพิ่ม Silver Fang
+--// by กัน + เพิ่ม Silver Fang + เปลี่ยนจุดวาร์ปไป Npc Mihawk
 
 local player = game:GetService("Players").LocalPlayer
 local PlayerGui = player:WaitForChild("PlayerGui")
@@ -167,8 +167,14 @@ task.spawn(function()
     end
 end)
 
--- จุดวาร์ปกลับ
-local deathPosition = CFrame.new(-30.7399998, 2.22399998, 156.429993)
+--===[ จุดวาร์ปกลับไป Npc Mihawk ]===--
+-- ใช้ CFrame จากที่นายไปยืนตรง Npc แล้ว print มา
+local deathPosition = CFrame.new(
+    -64.4341278,
+    -0.648809493,
+    117.068924
+)
+-- ถ้าอยากใช้ rotation เต็ม ให้แทนเป็น CFrame.new(ตำแหน่ง + เมทริกซ์) ได้
 
 --===[ ฟังก์ชันตีบอส + ถืออาวุธ ]===--
 local function AttackBoss(bossModel)
@@ -253,10 +259,7 @@ task.spawn(function()
                 local sjwBoss = latestSJW
                 local silverFangBoss = latestSilverFang
 
-                -- 🔁 ลำดับการตี (ปรับได้ตามใจ)
-                -- สมมติ: Yuta > SJW > Silver Fang > Mihawk
-                -- แต่เพราะ SJW กับ Silver Fang ผลัดกันเกิด ลอจิกนี้จะ auto รองรับอยู่แล้ว
-
+                -- 🔁 ลำดับการตี: Yuta > SJW > Silver Fang > Mihawk
                 if yutaBoss then
                     AttackBoss(yutaBoss)
                 elseif sjwBoss then
@@ -267,6 +270,7 @@ task.spawn(function()
                     hrp.CFrame = mihawk.HumanoidRootPart.CFrame * CFrame.new(0,0,5)
                     AttackBoss(mihawk)
                 else
+                    -- หาใครตีไม่ได้ วาร์ปกลับไป Npc Mihawk
                     hrp.CFrame = deathPosition
                 end
             end)
