@@ -1,0 +1,319 @@
+local Fluent = loadstring(game:HttpGet("https://github.com/dawid-scripts/Fluent/releases/latest/download/main.lua"))()
+local SaveManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/SaveManager.lua"))()
+local InterfaceManager = loadstring(game:HttpGet("https://raw.githubusercontent.com/dawid-scripts/Fluent/master/Addons/InterfaceManager.lua"))()
+
+local Window = Fluent:CreateWindow({
+    Title = "?",
+    SubTitle = "by Ryuenz",
+    TabWidth = 160,
+    Size = UDim2.fromOffset(580, 460),
+    Acrylic = true,
+    Theme = "Dark",
+    MinimizeKey = Enum.KeyCode.LeftControl
+})
+
+local Tabs = {
+    Main = Window:AddTab({ Title = "Auto Farm", Icon = "swords" }),
+    NPC = Window:AddTab({ Title = "NPC Teleport", Icon = "user" }),
+    Settings = Window:AddTab({ Title = "Settings", Icon = "settings" })
+}
+
+local Options = Fluent.Options
+
+SaveManager:SetLibrary(Fluent)
+InterfaceManager:SetLibrary(Fluent)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+InterfaceManager:SetFolder("AutoFarmHub")
+SaveManager:SetFolder("AutoFarmHub/config")
+InterfaceManager:BuildInterfaceSection(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+game:GetService("GuiService").GuiNavigationEnabled = false
+
+local player = game.Players.LocalPlayer
+local character, rootPart
+local autoFarmEnabled = false
+local selectedMonster = nil
+local selectedNPC = nil
+local selectedWeaponType = "Combat"
+local selectedSkills = {"Z"}
+local autoSkillEnabled = false
+local autoBossEnabled = false
+local selectedBoss = nil
+
+local MonsterData = {
+    ["Bandit"] = { folder = workspace.Main.Characters["Windmill Village"].Bandit, name = "Bandit" },
+    ["Bandit Leader"] = { folder = workspace.Main.Characters["Windmill Village"]["Bandit Leader"], name = "Bandit Leader" },
+    ["Pirate Skeleton"] = { folder = workspace.Main.Characters["Whispering Jungle"]["Pirate Skeleton"], name = "Pirate Skeleton" },
+    ["Skeleton"] = { folder = workspace.Main.Characters["Whispering Jungle"].Skeleton, name = "Skeleton" },
+    ["Desert Thief"] = { folder = workspace.Main.Characters["Sandora Island"]["Desert Thief"], name = "Desert Thief" },
+    ["Katana Master"] = { folder = workspace.Main.Characters["Sandora Island"]["Desert Thief"], name = "Katana Master" },
+    ["Mihawk"] = { folder = workspace.Main.Characters["Glacier Isle"].Mihawk, name = "Mihawk" },
+    ["Slayer's Trainee"] = { folder = workspace.Main.Characters["Forge Isle"]["Slayer's Trainee"], name = "Slayer's Trainee" },
+}
+
+-- Setup ตัวละคร + Anti-Fall
+spawn(function()
+    local function setupCharacter(Character)
+        if not Character then return end
+
+        local HRP = Character:WaitForChild("HumanoidRootPart", 5)
+        local Humanoid = Character:WaitForChild("Humanoid", 5)
+        if not HRP or not Humanoid then return end
+
+        local bodyVelocity
+
+        local function enableAntiFall()
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, false)
+        end
+
+        local function disableAntiFall()
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, true)
+            Humanoid:SetStateEnabled(Enum.HumanoidStateType.Freefall, true)
+        end
+
+        local function cancelFallState()
+            if Humanoid:GetState() == Enum.HumanoidStateType.FallingDown or 
+               Humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+                Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+            end
+        end
+
+        local steppedConnection
+        steppedConnection = game:GetService("RunService").Stepped:Connect(function()
+            if not Character or not Character.Parent or game.Players.LocalPlayer.Character ~= Character then
+                if steppedConnection then
+                    steppedConnection:Disconnect()
+                end
+                return
+            end
+
+            if autoFarmEnabled or autoBossEnabled   then
+                if not bodyVelocity or not bodyVelocity.Parent then
+                    bodyVelocity = Instance.new("BodyVelocity")
+                    bodyVelocity.Name = "BodyClip"
+                    bodyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
+                    bodyVelocity.Velocity = Vector3.new(0, 0, 0)
+                    bodyVelocity.Parent = HRP
+                end
+
+                for _, v in pairs(Character:GetDescendants()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = false
+                    end
+                end
+                enableAntiFall()
+                cancelFallState()
+            else
+                if bodyVelocity and bodyVelocity.Parent then
+                    bodyVelocity:Destroy()
+                end
+                disableAntiFall()
+            end
+        end)
+    end
+
+    if game.Players.LocalPlayer.Character then
+        setupCharacter(game.Players.LocalPlayer.Character)
+    end
+
+    game.Players.LocalPlayer.CharacterAdded:Connect(function(newCharacter)
+        setupCharacter(newCharacter)
+    end)
+end)
+
+-- Method farm
+local MethodFarm = CFrame.new(0, _G.DistanceAutoFarm or 30, 0)
+task.spawn(function()
+    while task.wait(0.1) do
+        pcall(function()
+            if _G.Method == "Behind" then
+                MethodFarm = CFrame.new(0, 0, _G.DistanceAutoFarm)
+            elseif _G.Method == "Below" then
+                MethodFarm = CFrame.new(0, -_G.DistanceAutoFarm, 0) * CFrame.Angles(math.rad(90), 0, 0)
+            elseif _G.Method == "Upper" then
+                MethodFarm = CFrame.new(0, _G.DistanceAutoFarm, 0)
+            else
+                MethodFarm = CFrame.new(0, _G.DistanceAutoFarm, 0)
+            end
+        end)
+    end
+end)
+
+-- ฟังก์ชัน Teleport
+local function teleportTo(target)
+    pcall(function()
+        if not rootPart then return end
+        local cf = nil
+        if target:IsA("Model") then
+            if target.PrimaryPart then
+                cf = target.PrimaryPart.CFrame
+            elseif target:FindFirstChild("HumanoidRootPart") then
+                cf = target.HumanoidRootPart.CFrame
+            else
+                local part = target:FindFirstChildWhichIsA("BasePart")
+                if part then cf = part.CFrame end
+            end
+        elseif target:IsA("BasePart") then
+            cf = target.CFrame
+        end
+        if cf then
+            rootPart.CFrame = cf
+        end
+    end)
+end
+
+-- ฟังก์ชันหา Monster
+local function findAllMonsters(monsterName)
+    local data = MonsterData[monsterName]
+    if not data or not data.folder then return {} end
+
+    local aliveMonsters = {}
+    for _, v in pairs(data.folder:GetChildren()) do
+        if v.Name == data.name 
+            and v:IsA("Model") 
+            and v:FindFirstChild("Humanoid") 
+            and v:FindFirstChild("HumanoidRootPart")
+            and v.Humanoid.Health > 0 then
+            table.insert(aliveMonsters, v)
+        end
+    end
+    return aliveMonsters
+end
+
+-- ฟังก์ชันเช็ค Quest
+local function hasQuest()
+    local hud = player.PlayerGui:FindFirstChild("HUD")
+    if not hud then return false end
+    local questFrame = hud:FindFirstChild("Bar").List:FindFirstChild("Quest")
+    return questFrame and questFrame:IsA("Frame")
+end
+
+local function getQuestTitle()
+    local success, result = pcall(function()
+        local hud = player.PlayerGui:FindFirstChild("HUD")
+        if not hud then return nil end
+        local label = hud:FindFirstChild("Bar").List.Quest.Bar.Label
+        if label and label:IsA("TextLabel") and label.Text ~= "" then
+            return label.Text
+        end
+        return nil
+    end)
+    return success and result or nil
+end
+
+local function extractMonsterFromQuest(questText)
+    if not questText or questText == "" then return nil end
+    local patterns = { "Defeat%s+(.+)", "Kill%s+%d+%s+(.+)", "Defeat%s+%d+%s+(.+)", "Eliminate%s+(.+)" }
+    for _, p in ipairs(patterns) do
+        local m = string.match(questText, p)
+        if m and m ~= "" then
+            return string.gsub(m, "%s*$", "")
+        end
+    end
+    return nil
+end
+
+local function getQuestMonster()
+    local title = getQuestTitle()
+    if not title then return nil end
+    return extractMonsterFromQuest(title)
+end
+
+local function isQuestMatching(questMonster, selectedMonster)
+    if not questMonster or not selectedMonster then return false end
+    return string.find(questMonster, selectedMonster) or string.find(selectedMonster, questMonster)
+end
+
+local function findQuestNPC(monsterName)
+    for _, npc in pairs(workspace.Main.NPCs.Quests:GetChildren()) do
+        if npc:IsA("Model") and npc:FindFirstChild("Quest") and npc.Quest:FindFirstChild("Title") then
+            local title = npc.Quest.Title.Value
+            local npcMonster = extractMonsterFromQuest(title)
+            if npcMonster and (string.find(npcMonster, monsterName) or string.find(monsterName, npcMonster)) then
+                return npc, title
+            end
+        end
+    end
+    return nil
+end
+
+local function pressE()
+    local vim = game:GetService("VirtualInputManager")
+    vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+    task.wait(0.1)
+    vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+-- ฟังก์ชัน Equip Weapon
+function EquipWeapon(Tool)
+    pcall(function()
+        if player.Backpack:FindFirstChild(Tool) then 
+            local toolObj = player.Backpack:FindFirstChild(Tool) 
+            player.Character.Humanoid:EquipTool(toolObj) 
+        end
+    end)
+end
+
+function Equipcombat()
+    for _, v in pairs(player.Backpack:GetChildren()) do
+        if v.ToolTip == "Combat" and player.Backpack:FindFirstChild(v.Name) then
+            EquipWeapon(v.Name)
+        end
+    end
+end
+
+function Equipsword()
+    for _, v in pairs(player.Backpack:GetChildren()) do
+        if v.ToolTip == "Sword" and player.Backpack:FindFirstChild(v.Name) then
+            EquipWeapon(v.Name)
+        end
+    end
+end
+
+function Equipfruit()
+    for _, v in pairs(player.Backpack:GetChildren()) do
+        if v.ToolTip == "Fruit" and player.Backpack:FindFirstChild(v.Name) then
+            EquipWeapon(v.Name)
+        end
+    end
+end
+
+local function equipSelectedWeapon()
+    if selectedWeaponType == "Combat" then
+        Equipcombat()
+    elseif selectedWeaponType == "Sword" then
+        Equipsword()
+    elseif selectedWeaponType == "Fruit" then
+        Equipfruit()
+    end
+end
+
+-- ตรวจสอบ Haki
+local function isHakiEnabled()
+    local leftArm = game.Players.LocalPlayer.Character and game.Players.LocalPlayer.Character:FindFirstChild("Left Arm")
+    if not leftArm then return false end
+    local hakiEffect = leftArm:FindFirstChild("Haki_Effects")
+    return hakiEffect and hakiEffect:IsA("Highlight")
+end
+
+-- Auto Click + Haki
+local function autoclick()
+    game:GetService("VirtualUser"):CaptureController()
+    game:GetService("VirtualUser"):Button1Down(Vector2.new(1280, 672))
+    if not isHakiEnabled() then
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Serverside"):FireServer("Server","Misc","Haki",1)
+    end
+    if game:GetService("Players").LocalPlayer.PlayerGui.Effects.Observation.Visible == false then 
+        game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Serverside"):FireServer("Server","Misc","Observation",1)
+    end
+end
+
+spawn(function()
+    while task.wait() do
+        if autoFarmEnabled and player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+            autoclick()
+        end
+    end
+end)
