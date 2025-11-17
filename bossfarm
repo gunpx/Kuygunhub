@@ -4,7 +4,7 @@
 --===[ Settings ]===--
 local QUEST_CFRAME = CFrame.new(483.44696, 2.65053964, -629.028992, 0.760025263, 6.112012580-08, -0.649893522, 1.829494246-08, 1, 1.154415940-07, 0.649893522, -9.962829496-08, 0.760025263)
 local ISLAND = "Throne Isle"
-local WEAPON = "Tensa Zangetsu"
+local WEAPON = "Yuta's Katana"
 local DELAY = 0.001
 
 --===[ Services ]===--
