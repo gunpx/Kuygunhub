@@ -44,7 +44,7 @@ getgenv().AutoFarmMihawk = false
 getgenv().AutoZoom = true
 getgenv().gx = true
 getgenv().AutoObservationHaki = false
-local Weapon = "Yuta's Katana"
+local Weapon = "Shadow"
 local Delay = 0.001
 
 --===[ ปรับ ProximityPrompt ]===--
