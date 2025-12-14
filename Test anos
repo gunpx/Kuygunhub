@@ -77,7 +77,7 @@ local autoFarm = false
 
 AutoBtn.MouseButton1Click:Connect(function()
 	autoFarm = not autoFarm
-	AutoBtn.Text = "AUTO FARM : " .. (autoFarm and "ON" or "OFF")
+	AutoBtn.Text = "AUTO FARM : "..(autoFarm and "ON" or "OFF")
 	AutoBtn.BackgroundColor3 =
 		autoFarm and Color3.fromRGB(60,120,60)
 		or Color3.fromRGB(120,60,60)
@@ -86,19 +86,10 @@ end)
 ------------------------------------------------
 -- 🗡️ AUTO EQUIP SHADOW
 ------------------------------------------------
-local function isHoldingShadow()
+local function holdingShadow()
 	for _, v in pairs(character:GetChildren()) do
 		if v:IsA("Tool") and v.Name == WEAPON_NAME then
 			return true
-		end
-	end
-	return false
-end
-
-local function findShadow()
-	for _, tool in pairs(backpack:GetChildren()) do
-		if tool:IsA("Tool") and tool.Name == WEAPON_NAME then
-			return tool
 		end
 	end
 end
@@ -107,14 +98,14 @@ task.spawn(function()
 	while true do
 		if autoFarm and character then
 			local hum = character:FindFirstChildOfClass("Humanoid")
-			if hum and not isHoldingShadow() then
-				local shadow = findShadow()
-				if shadow then
-					pcall(function()
+			if hum and not holdingShadow() then
+				for _, tool in pairs(backpack:GetChildren()) do
+					if tool:IsA("Tool") and tool.Name == WEAPON_NAME then
 						hum:UnequipTools()
 						task.wait(0.1)
-						shadow.Parent = character
-					end)
+						tool.Parent = character
+						break
+					end
 				end
 			end
 		end
@@ -123,7 +114,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------
--- 🔥 AUTO HAKI + OBS (FAST)
+-- 🔥 AUTO HAKI + OBS
 ------------------------------------------------
 task.spawn(function()
 	while true do
@@ -140,6 +131,24 @@ task.spawn(function()
 		task.wait(0.05)
 	end
 end)
+
+------------------------------------------------
+-- 🧭 WARP TO BOSS
+------------------------------------------------
+local function warpToBoss(areaName, bossName)
+	if not hrp then return end
+	local area = workspace.Main.Characters:FindFirstChild(areaName)
+	if not area then return end
+	local bossFolder = area:FindFirstChild("Boss")
+	if not bossFolder then return end
+
+	for _, v in pairs(bossFolder:GetChildren()) do
+		if v.Name == bossName and v:FindFirstChild("HumanoidRootPart") then
+			hrp.CFrame = v.HumanoidRootPart.CFrame * CFrame.new(0,0,6)
+			return
+		end
+	end
+end
 
 ------------------------------------------------
 -- 🧠 CHECK BOSS NEAR
@@ -167,11 +176,11 @@ local skills = {Enum.KeyCode.Z,Enum.KeyCode.X,Enum.KeyCode.C,Enum.KeyCode.V}
 task.spawn(function()
 	while true do
 		if autoFarm and bossNear() then
-			for _, key in ipairs(skills) do
+			for _, k in ipairs(skills) do
 				if not autoFarm or not bossNear() then break end
-				Vim:SendKeyEvent(true, key, false, game)
+				Vim:SendKeyEvent(true, k, false, game)
 				task.wait(0.1)
-				Vim:SendKeyEvent(false, key, false, game)
+				Vim:SendKeyEvent(false, k, false, game)
 				task.wait(0.25)
 			end
 		end
@@ -180,7 +189,25 @@ task.spawn(function()
 end)
 
 ------------------------------------------------
--- 🔄 MAIN LOOP
+-- 🧿 AUTO SPAWN SUKUNA
+------------------------------------------------
+task.spawn(function()
+	while true do
+		if autoFarm and pityBoss.Value < 25 then
+			pcall(function()
+				local gui = playerGui.Button["Boss Spawn"]
+				gui.Visible = true
+				gui.Spawn.Button:Activate()
+				task.wait(0.2)
+				gui.Frame.Sukuna.Button:Activate()
+			end)
+		end
+		task.wait(3)
+	end
+end)
+
+------------------------------------------------
+-- 🔄 MAIN LOOP (FARM BOSS)
 ------------------------------------------------
 task.spawn(function()
 	while true do
@@ -189,6 +216,14 @@ task.spawn(function()
 		PityText.TextColor3 =
 			(v == 25) and Color3.fromRGB(255,80,80)
 			or Color3.fromRGB(80,255,80)
+
+		if autoFarm then
+			if v == 25 then
+				warpToBoss("Abyss Hill [Upper]", "Anos")
+			else
+				warpToBoss("Throne Isle", "Sukuna")
+			end
+		end
 		task.wait(1)
 	end
 end)
