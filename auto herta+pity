@@ -1,0 +1,216 @@
+------------------------------------------------
+-- 🔧 SERVICES
+------------------------------------------------
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Vim = game:GetService("VirtualInputManager")
+
+------------------------------------------------
+-- 👤 PLAYER
+------------------------------------------------
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local backpack = player:WaitForChild("Backpack")
+local pityBoss = player:WaitForChild("Pity"):WaitForChild("Boss")
+
+------------------------------------------------
+-- 🔁 CHARACTER
+------------------------------------------------
+local character, hrp
+local function onChar(char)
+	character = char
+	hrp = char:WaitForChild("HumanoidRootPart")
+end
+onChar(player.Character or player.CharacterAdded:Wait())
+player.CharacterAdded:Connect(onChar)
+
+------------------------------------------------
+-- 🔄 STATE
+------------------------------------------------
+local autoFarm = false
+getgenv().boss = false
+local autoPressE = false
+
+------------------------------------------------
+-- 🗺️ CFRAMES
+------------------------------------------------
+local AIZEN_WAIT_CFRAME = CFrame.new(
+	-468.047729, 4.84019613, -878.874878,
+	-0.817907691,0,-0.575349569,
+	0,1,0,
+	0.575349569,0,-0.817907691
+)
+
+local HERTA_SPAWN_CFRAME = CFrame.new(
+	-1127.97729, 2.40584683, -534.461365,
+	0.0101212123, -8.9545118e-09, 0.9999488,
+	1.26636381e-08, 1, 8.826792636e-09,
+	-0.9999488, 1.25736515e-08, 0.0101212123
+)
+
+------------------------------------------------
+-- ⚡ PROXIMITY PROMPT HOLD = 0
+------------------------------------------------
+task.spawn(function()
+	while true do
+		for _,v in pairs(workspace:GetDescendants()) do
+			if v:IsA("ProximityPrompt") then
+				v.HoldDuration = 0
+			end
+		end
+		task.wait(5)
+	end
+end)
+
+------------------------------------------------
+-- 🔘 PRESS E
+------------------------------------------------
+local function pressE()
+	if not autoPressE then return end
+	Vim:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+	task.wait(0.1)
+	Vim:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+end
+
+------------------------------------------------
+-- 🗡️ AUTO EQUIP SWORD
+------------------------------------------------
+local function equipSword()
+	if not character then return end
+	local hum = character:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+
+	for _,v in pairs(character:GetChildren()) do
+		if v:IsA("Tool") then return end
+	end
+
+	for _,tool in pairs(backpack:GetChildren()) do
+		if tool:IsA("Tool") then
+			tool.Parent = character
+			return
+		end
+	end
+end
+
+task.spawn(function()
+	while true do
+		if autoFarm then equipSword() end
+		task.wait(0.3)
+	end
+end)
+
+------------------------------------------------
+-- 🔎 FIND BOSS
+------------------------------------------------
+local function findBoss(folder, name)
+	for _,v in pairs(folder:GetChildren()) do
+		if v.Name == name then
+			local hum = v:FindFirstChildOfClass("Humanoid")
+			local bhrp = v:FindFirstChild("HumanoidRootPart")
+			if hum and bhrp and hum.Health > 0 then
+				return bhrp
+			end
+		end
+	end
+	return nil
+end
+
+------------------------------------------------
+-- ⚔️ AUTO SKILL (ใกล้บอส)
+------------------------------------------------
+local skills = {Enum.KeyCode.Z,Enum.KeyCode.X,Enum.KeyCode.C,Enum.KeyCode.V}
+
+task.spawn(function()
+	while true do
+		if autoFarm and hrp then
+			for _,area in pairs(workspace.Main.Characters:GetChildren()) do
+				local bossFolder = area:FindFirstChild("Boss")
+				if bossFolder then
+					for _,b in pairs(bossFolder:GetChildren()) do
+						local bhrp = b:FindFirstChild("HumanoidRootPart")
+						local hum = b:FindFirstChildOfClass("Humanoid")
+						if bhrp and hum and hum.Health > 0 then
+							if (bhrp.Position - hrp.Position).Magnitude < 25 then
+								for _,k in ipairs(skills) do
+									Vim:SendKeyEvent(true,k,false,game)
+									task.wait(0.1)
+									Vim:SendKeyEvent(false,k,false,game)
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+		task.wait(0.4)
+	end
+end)
+
+------------------------------------------------
+-- ⚔️ AUTO AIZEN (PITY < 25)
+------------------------------------------------
+task.spawn(function()
+	while true do
+		if autoFarm and pityBoss.Value < 25 and hrp then
+			local folder = workspace.Main.Characters.Huecomundo.Boss
+			local bhrp = findBoss(folder,"Aizen")
+
+			if bhrp then
+				hrp.CFrame = bhrp.CFrame * CFrame.new(0,0,6)
+			else
+				hrp.CFrame = AIZEN_WAIT_CFRAME
+				pressE()
+			end
+		end
+		task.wait(0.6)
+	end
+end)
+
+------------------------------------------------
+-- 👑 AUTO HERTA (PITY = 25)
+------------------------------------------------
+task.spawn(function()
+	while true do
+		if autoFarm and pityBoss.Value >= 25 and hrp then
+			local area = workspace.Main.Characters:FindFirstChild("Xmas Island")
+			if area and area:FindFirstChild("Boss") then
+				local bhrp = findBoss(area.Boss,"Herta")
+
+				if bhrp then
+					-- ตี Herta
+					hrp.CFrame = bhrp.CFrame * CFrame.new(0,0,6)
+				else
+					-- เสก Herta
+					hrp.CFrame = HERTA_SPAWN_CFRAME
+					pressE()
+				end
+			end
+		end
+		task.wait(0.7)
+	end
+end)
+
+------------------------------------------------
+-- 🖥️ SIMPLE UI
+------------------------------------------------
+local ScreenGui = Instance.new("ScreenGui", playerGui)
+ScreenGui.Name = "AutoFarmGUI"
+ScreenGui.ResetOnSpawn = false
+
+local Toggle = Instance.new("TextButton", ScreenGui)
+Toggle.Size = UDim2.new(0,200,0,40)
+Toggle.Position = UDim2.new(0,20,0.5,-20)
+Toggle.Text = "AUTO FARM : OFF"
+Toggle.BackgroundColor3 = Color3.fromRGB(120,60,60)
+Toggle.TextColor3 = Color3.new(1,1,1)
+
+Toggle.MouseButton1Click:Connect(function()
+	autoFarm = not autoFarm
+	autoPressE = autoFarm
+	getgenv().boss = autoFarm
+
+	Toggle.Text = "AUTO FARM : "..(autoFarm and "ON" or "OFF")
+	Toggle.BackgroundColor3 = autoFarm
+		and Color3.fromRGB(60,120,60)
+		or Color3.fromRGB(120,60,60)
+end)
