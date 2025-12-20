@@ -13,7 +13,7 @@ local Remotes = ReplicatedStorage.Remotes.Serverside
 --===[ Settings ]===--
 getgenv().AutoFarm = false
 getgenv().AutoSkill = true
-local Weapon = "Shadow"
+local Weapon = "Venuzdonoa"
 local killCount = 0
 
 --===[ Paths ]===--
